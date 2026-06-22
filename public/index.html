@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Pago Wompi</title>
+
+  <style>
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f7fb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .card {
+      background: white;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, .1);
+      width: 400px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      background: #6c5ce7;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: .9;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 25px;
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  <div class="card">
+
+    <h2>💳 Pago Seguro</h2>
+
+    <p class="subtitle">
+      Complete los datos para continuar con el pago
+    </p>
+
+    <label>Nombre</label>
+    <input id="name" placeholder="Ingrese su nombre">
+
+    <br><br>
+
+    <label>Correo electrónico</label>
+    <input id="email" placeholder="Ingrese su correo">
+
+    <br><br>
+
+    <label>Monto a pagar</label>
+    <input
+      id="amount"
+      type="number"
+      placeholder="$"
+      min="$$$">
+
+    <br><br>
+
+    <button id="pay-button">
+      Continuar al pago
+    </button>
+
+  </div>
+
+  <script src="https://checkout.wompi.co/widget.js"></script>
+
+  <script>
+
+    window.addEventListener("load", function () {
+
+      const btn = document.getElementById("pay-button");
+
+      btn.addEventListener("click", function () {
+
+        const amount = document.getElementById("amount").value;
+
+        const name = document.getElementById("name").value.trim();
+        const email = document.getElementById("email").value.trim();
+
+        if (!name) {
+          alert("Ingresa tu nombre");
+          return;
+        }
+
+        if (!email) {
+          alert("Ingresa tu correo");
+          return;
+        }
+
+        if (!amount || amount <= 0) {
+          alert("Ingresa un monto válido");
+          return;
+        }
+
+        const checkout = new WidgetCheckout({
+          currency: "COP",
+          amountInCents: amount * 100,
+          reference: "pedido-" + Date.now(),
+          publicKey: "pub_prod_cDbHORdugVqjpzrlFq5Pnim7dizQOImc"
+        });
+
+        checkout.open(function (result) {
+
+          console.log("RESULTADO WOMPI:", result);
+
+          if (!result || !result.transaction) {
+            alert("Pago cancelado o sin respuesta");
+            return;
+          }
+
+          fetch("/verificar-pago/" + result.transaction.id, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              name,
+              email
+            })
+          })
+          .then(res => res.json())
+          .then(data => {
+
+            console.log("🔐 VERIFICADO:", data);
+
+            if (data.valid) {
+              alert("✅ Pago APROBADO correctamente");
+            } else {
+              alert("❌ Pago NO aprobado: " + data.status);
+            }
+
+          });
+
+        });
+
+      });
+
+    });
+
+  </script>
+
+</body>
+
+</html>
